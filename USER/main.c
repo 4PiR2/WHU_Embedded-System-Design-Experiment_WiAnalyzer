@@ -1,11 +1,13 @@
 #include "sys.h"
 #include "delay.h"
 #include "usart.h"
-#include "led.h"
 #include "includes.h"
 #include "os_app_hooks.h"
-
-#include "common.h"
+#include "led.h"
+#include "lcd.h"
+#include "touch.h"
+#include "wifi.h"
+#include "rng.h"
 //UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
 //优先级0：中断服务服务管理任务 OS_IntQTask()
@@ -40,7 +42,7 @@ CPU_STK LED0_TASK_STK[LED0_STK_SIZE];
 void led0_task(void *p_arg);
 
 //任务优先级
-#define LED1_TASK_PRIO		5
+#define LED1_TASK_PRIO		7
 //任务堆栈大小	
 #define LED1_STK_SIZE 		128
 //任务控制块
@@ -71,7 +73,10 @@ int main(void)
 	uart_init(115200);  //串口初始化
 	usart3_init(115200);  //初始化串口3波特率为115200
 	LED_Init();         //LED初始化
-
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//设置系统中断优先级分组2
+ 	LCD_Init();           //初始化LCD FSMC接口
+	tp_dev.init();
+	RNG_Init();
 	
 	OSInit(&err);		//初始化UCOSIII
 	OS_CRITICAL_ENTER();//进入临界区
@@ -167,6 +172,7 @@ void start_task(void *p_arg)
 //led0任务函数
 void led0_task(void *p_arg)
 {
+	//CPU_SR_ALLOC();
 	OS_ERR err;
 	p_arg = p_arg;
 	while(1)
@@ -182,26 +188,74 @@ void led0_task(void *p_arg)
 //led1任务函数
 void led1_task(void *p_arg)
 {
+	POINT_COLOR=RED;      //画笔颜色：红色
 	OS_ERR err;
 	p_arg = p_arg;
+	CPU_SR_ALLOC();
+	//LCD_Display_Dir(1);
 	while(1)
 	{
 		LED1=~LED1;
+		OS_CRITICAL_ENTER();
+		//LCD_Clear(BLUE);
+		LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");	
+		printf("i: %d\n",RNG_Get_RandomNum());
+		gui_fill_circle(200,200,100,GREEN);
+		LCD_DrawRectangle(100,100,470,790);
+		OS_CRITICAL_EXIT();
 		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
 	}
 }
-
+void ctp_test();
 //浮点测试任务
 void float_task(void *p_arg)
 {
+	//while(1);
 	CPU_SR_ALLOC();
 	static float float_num=0.01;
 	while(1)
 	{
+		ctp_test();
 		float_num+=0.01f;
 		OS_CRITICAL_ENTER();	//进入临界区
 		//printf("float_num的值为: %.4f\r\n",float_num);
 		OS_CRITICAL_EXIT();		//退出临界区
 		delay_ms(500);			//延时500ms
 	}
+}
+
+//电容触摸屏测试函数
+void ctp_test(void)
+{
+	u8 t=0;
+	u8 i=0;	  	    
+ 	u16 lastpos[5][2];		//最后一次的数据 
+	while(1)
+	{
+		tp_dev.scan(0);
+		for(t=0;t<OTT_MAX_TOUCH;t++)
+		{
+			if((tp_dev.sta)&(1<<t))
+			{
+				if(tp_dev.x[t]<lcddev.width&&tp_dev.y[t]<lcddev.height)
+				{
+					if(lastpos[t][0]==0XFFFF)
+					{
+						lastpos[t][0] = tp_dev.x[t];
+						lastpos[t][1] = tp_dev.y[t];
+					}
+					lcd_draw_bline(lastpos[t][0],lastpos[t][1],tp_dev.x[t],tp_dev.y[t],2,RED);//画线
+					lastpos[t][0]=tp_dev.x[t];
+					lastpos[t][1]=tp_dev.y[t];
+					if(tp_dev.x[t]>(lcddev.width-24)&&tp_dev.y[t]<20)
+					{
+						//Load_Drow_Dialog();//清除
+					}
+				}
+			}else lastpos[t][0]=0XFFFF;
+		}
+		
+		delay_ms(5);i++;
+		if(i%20==0)LED0=!LED0;
+	}	
 }

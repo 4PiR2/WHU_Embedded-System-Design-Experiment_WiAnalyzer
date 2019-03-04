@@ -1,6 +1,9 @@
 #include "stdio.h"
 #include "delay.h"
-#include "common.h"
+#include "wifi.h"
+#include "sys.h"
+#include "delay.h"
+#include "usart.h"
 
 //ATK-ESP8266发送命令后,检测接收到的应答
 //str:期待的应答结果
@@ -10,9 +13,9 @@ u8* atk_8266_check_cmd(u8 *str)
 {
 	
 	char *strx=0;
-	//if(USART3_RX_STA&0X8000)		//接收到一次数据了
+	if(USART3_RX_STA&0X8000)		//接收到一次数据了
 	{ 
-		USART3_RX_BUF[USART3_RX_STA&0X7FFF]=0;//添加结束符
+		//USART3_RX_BUF[USART3_RX_STA&0X7FFF]=0;//添加结束符
 		printf("%s\n",(u8*)USART3_RX_BUF);
 	} 
 	return 0;
