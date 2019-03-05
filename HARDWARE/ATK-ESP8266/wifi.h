@@ -66,7 +66,25 @@ extern const u8* ATK_ESP8266_WORKMODE_TBL[3];
 extern const u8* ATK_ESP8266_ECN_TBL[5];
 #endif
 
-
-
-
-
+#define QLEN 30
+typedef struct
+{
+	char ecn;
+	char ssidlen;
+	char rssi;
+	char channel;
+	char ssid[32];
+	char mac[12];
+	short freqoffset;
+	short freqcali;
+	char pairwisecipher;
+	char groupcipher;
+	char bgn;
+	char wps;
+} wifiinfo;
+typedef struct
+{
+	wifiinfo data[QLEN],*pointer[QLEN];
+	short len;
+} wifiqueue;
+u8 atk_8266_search_wifi(wifiqueue *q,short waittime);

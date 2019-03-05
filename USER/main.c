@@ -169,22 +169,31 @@ void start_task(void *p_arg)
 	OS_CRITICAL_EXIT();	//进入临界区
 }
 
+wifiqueue q;
 //led0任务函数
 void led0_task(void *p_arg)
 {
-	//CPU_SR_ALLOC();
+	CPU_SR_ALLOC();
 	OS_ERR err;
 	p_arg = p_arg;
 	while(1)
 	{
 		LED0=0;
-		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 		LED0=1;
+		//OS_CRITICAL_ENTER();
 		printf("777\n");
-		atk_8266_send_cmd("AT+CWLAP","OK",2000);
+		atk_8266_search_wifi(&q,2000);
+		//OS_CRITICAL_EXIT();
+		for(int i=0;i<q.len;i++)
+		{
+			printf("%d,-%d,%s\n",(*(q.pointer[i])).channel,~(*(q.pointer[i])).rssi+1&0xFF,(*(q.pointer[i])).ssid);
+		}
+		OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
+u16 X0=38,Y0=110,DX=27,DY=65,LFSIZE=16;
+void drawtrapeziod(u8 channel,u8 rssi,char *ssid,u8 ssidlen);
 //led1任务函数
 void led1_task(void *p_arg)
 {
@@ -193,19 +202,44 @@ void led1_task(void *p_arg)
 	p_arg = p_arg;
 	CPU_SR_ALLOC();
 	//LCD_Display_Dir(1);
-	while(1)
+	u8 i,*labels[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13"};
+	POINT_COLOR=GRAY;
+	for(i=0;i<=10;i++)
+		LCD_DrawLine(X0,Y0+DY*i,X0+DX*16,Y0+DY*i);
+	for(i=0;i<=16;i++)
+		LCD_DrawLine(X0+DX*i,Y0,X0+DX*i,Y0+DY*10);
+	for(i=0;i<=10;i++)
+		LCD_ShowString(X0-strlen((char *)labels[i])*LFSIZE/2,Y0+DY*i-LFSIZE/2,strlen((char *)labels[i])*LFSIZE/2,LFSIZE,LFSIZE,labels[i]);
+	for(i=2;i<=14;i++)
+		LCD_ShowString(X0+DX*i-strlen((char *)labels[9+i])*LFSIZE/4,Y0+DY*10,strlen((char *)labels[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels[9+i]);
+	delay_ms(10000);
+	POINT_COLOR=RED;
+	for(i=0;i<q.len;i++)
+		drawtrapeziod(q.data[i].channel,q.data[i].rssi,q.data[i].ssid,q.data[i].ssidlen);
+	while(0)
 	{
 		LED1=~LED1;
 		OS_CRITICAL_ENTER();
 		//LCD_Clear(BLUE);
 		LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");	
-		printf("i: %d\n",RNG_Get_RandomNum());
+		//printf("i: %d\n",RNG_Get_RandomNum());
 		gui_fill_circle(200,200,100,GREEN);
 		LCD_DrawRectangle(100,100,470,790);
 		OS_CRITICAL_EXIT();
 		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
 	}
 }
+
+void drawtrapeziod(u8 channel,u8 rssi,char *ssid,u8 ssidlen)
+{
+	u16 r=256-rssi,xb=X0+DX*channel,xa=xb-DX,xc=xb+DX*2,xd=xc+DX,
+		ya=Y0+DY*10,yb=Y0+DY*r/10,yc=yb,yd=ya;
+	LCD_DrawLine(xa,ya,xb,yb);
+	LCD_DrawLine(xb,yb,xc,yc);
+	LCD_DrawLine(xc,yc,xd,yd);
+	LCD_ShowString(xb+DX-ssidlen*LFSIZE/4,yb-LFSIZE,ssidlen*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ssid);
+}
+
 void ctp_test();
 //浮点测试任务
 void float_task(void *p_arg)
