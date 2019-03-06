@@ -43,9 +43,9 @@ CPU_STK LED0_TASK_STK[LED0_STK_SIZE];
 void led0_task(void *p_arg);
 
 //任务优先级
-#define LED1_TASK_PRIO		5
+#define LED1_TASK_PRIO		4
 //任务堆栈大小	
-#define LED1_STK_SIZE 		128
+#define LED1_STK_SIZE 		256
 //任务控制块
 OS_TCB Led1TaskTCB;
 //任务堆栈	
@@ -186,16 +186,12 @@ void led0_task(void *p_arg)
 	atk_8266_set(2000);
 	while(1)
 	{
-		LED0=0;
-		LED0=1;
+		//LED0=0;
+		//LED0=1;
 		printf("777\n");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		atk_8266_search_wifi(&q,2000);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		for(int i=0;i<q.len;i++)
-		{
-			printf("%d,-%d,%s\n",(*(q.pointer[i])).channel,~(*(q.pointer[i])).rssi+1&0xFF,(*(q.pointer[i])).ssid);
-		}
 		OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
@@ -206,42 +202,28 @@ void led1_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
+	u8 mode=1;
 	colorqueue *cq1=&cqa,*cq2=&cqb;
 	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
+			//LCD_Clear(BLUE);
+		//gui_fill_circle(200,200,100,GREEN);
+		//LCD_DrawRectangle(100,100,470,790);
 	POINT_COLOR=RED;      //画笔颜色：红色
 	LCD_ShowString(38,45,250,24,24,"Wi-Fi Analyzer");
 	while(1)
 	{
-		LED1=~LED1;
-		//LCD_Clear(BLUE);
-		//LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");
-		//gui_fill_circle(200,200,100,GREEN);
-		//LCD_DrawRectangle(100,100,470,790);
+		printf("nnn\n");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		drawui(&cq1,&cq2,&q);
+		drawui(mode,&cq1,&cq2,&q);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
+		printf("lll\n");
+		OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
+		//delay_ms(1000);
+		printf("ppp\n");
 	}
 }
 
-void ctp_test();
-//浮点测试任务
-void float_task(void *p_arg)
-{
-	//while(1);
-	CPU_SR_ALLOC();
-	static float float_num=0.01;
-	while(1)
-	{
-		ctp_test();
-		float_num+=0.01f;
-		OS_CRITICAL_ENTER();	//进入临界区
-		//printf("float_num的值为: %.4f\r\n",float_num);
-		OS_CRITICAL_EXIT();		//退出临界区
-		delay_ms(500);			//延时500ms
-	}
-}
 
 //电容触摸屏测试函数
 void ctp_test(void)
@@ -277,4 +259,20 @@ void ctp_test(void)
 		delay_ms(5);i++;
 		if(i%20==0)LED0=!LED0;
 	}	
+}
+//浮点测试任务
+void float_task(void *p_arg)
+{
+	//while(1);
+	CPU_SR_ALLOC();
+	static float float_num=0.01;
+	while(1)
+	{
+		ctp_test();
+		float_num+=0.01f;
+		OS_CRITICAL_ENTER();	//进入临界区
+		//printf("float_num的值为: %.4f\r\n",float_num);
+		OS_CRITICAL_EXIT();		//退出临界区
+		delay_ms(1000);			//延时500ms
+	}
 }
