@@ -43,7 +43,7 @@ CPU_STK LED0_TASK_STK[LED0_STK_SIZE];
 void led0_task(void *p_arg);
 
 //任务优先级
-#define LED1_TASK_PRIO		4
+#define LED1_TASK_PRIO		5
 //任务堆栈大小	
 #define LED1_STK_SIZE 		256
 //任务控制块
@@ -177,8 +177,7 @@ void start_task(void *p_arg)
 	OS_CRITICAL_EXIT();	//进入临界区
 }
 
-wifiqueue q;
-//led0任务函数
+static wifiqueue q;
 void led0_task(void *p_arg)
 {
 	OS_ERR err;
@@ -186,23 +185,22 @@ void led0_task(void *p_arg)
 	atk_8266_set(2000);
 	while(1)
 	{
-		//LED0=0;
-		//LED0=1;
-		printf("777\n");
+		LED0=1;
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		atk_8266_search_wifi(&q,2000);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
+		LED0=0;
 		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
-colorqueue cqa,cqb;
-//led1任务函数
+static colorqueue cqa,cqb;
+static u8 mode=3;
 void led1_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
-	u8 mode=3;
+	u16 mode0;
 	colorqueue *cq1=&cqa,*cq2=&cqb;
 	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
@@ -210,65 +208,54 @@ void led1_task(void *p_arg)
 		//gui_fill_circle(200,200,100,GREEN);
 		//LCD_DrawRectangle(100,100,470,790);
 	POINT_COLOR=RED;      //画笔颜色：红色
-	LCD_ShowString(38,45,250,24,24,"Wi-Fi Analyzer");
+	LCD_ShowString(24,7,480,24,24,"Wi-Fi Analyzer by CJL(2016301500014)");
 	while(1)
 	{
+		mode0=mode;
+		POINT_COLOR=BLACK;
+		LCD_Fill(12,40,12+145,80,mode0==3?YELLOW:LIGHTGREEN);
+		LCD_ShowString(12+20,40+12,13*16,16,16,"Access Points");
+		LCD_Fill(12+145+10,40,12+145+10+145,80,mode0==1?YELLOW:LIGHTGREEN);
+		LCD_ShowString(12+145+10+20,40+12,13*16,16,16,"Channel Graph");
+		LCD_Fill(12+145+10+145+10,40,12+145+10+145+10+145,80,mode0==2?YELLOW:LIGHTGREEN);
+		LCD_ShowString(12+145+10+145+10+32,40+12,10*16,16,16,"Time Graph");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		drawui(mode,&cq1,&cq2,&q);
+		drawui(mode0,&cq1,&cq2,&q);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
+		if(mode0==mode)
+			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
-
-//电容触摸屏测试函数
-void ctp_test(void)
-{
-	u8 t=0;
-	u8 i=0;	  	    
- 	u16 lastpos[5][2];		//最后一次的数据 
-	while(1)
-	{
-		tp_dev.scan(0);
-		for(t=0;t<OTT_MAX_TOUCH;t++)
-		{
-			if((tp_dev.sta)&(1<<t))
-			{
-				if(tp_dev.x[t]<lcddev.width&&tp_dev.y[t]<lcddev.height)
-				{
-					if(lastpos[t][0]==0XFFFF)
-					{
-						lastpos[t][0] = tp_dev.x[t];
-						lastpos[t][1] = tp_dev.y[t];
-					}
-					lcd_draw_bline(lastpos[t][0],lastpos[t][1],tp_dev.x[t],tp_dev.y[t],2,RED);//画线
-					lastpos[t][0]=tp_dev.x[t];
-					lastpos[t][1]=tp_dev.y[t];
-					if(tp_dev.x[t]>(lcddev.width-24)&&tp_dev.y[t]<20)
-					{
-						//Load_Drow_Dialog();//清除
-					}
-				}
-			}else lastpos[t][0]=0XFFFF;
-		}
-		
-		delay_ms(50);i++;
-		if(i%20==0)LED0=!LED0;
-	}	
-}
 //浮点测试任务
 void float_task(void *p_arg)
 {
-	//while(1);
-	CPU_SR_ALLOC();
-	static float float_num=0.01;
+	//CPU_SR_ALLOC();
+	//OS_CRITICAL_ENTER();	//进入临界区
+	//printf("float_num的值为: %.4f\r\n",float_num);
+	//OS_CRITICAL_EXIT();		//退出临界区
+	OS_ERR err;
+	p_arg = p_arg;
+	u16 x,y;	  	    
 	while(1)
 	{
-		ctp_test();
-		float_num+=0.01f;
-		OS_CRITICAL_ENTER();	//进入临界区
-		//printf("float_num的值为: %.4f\r\n",float_num);
-		OS_CRITICAL_EXIT();		//退出临界区
-		delay_ms(2000);			//延时500ms
-	}
+		tp_dev.scan(0);
+		//for(t=0;t<OTT_MAX_TOUCH;t++)
+			//if((tp_dev.sta)&(1<<t));
+		if(tp_dev.sta&1)
+		{
+			x=tp_dev.x[0];
+			y=tp_dev.y[0];
+			if(y>=40&&y<=80)
+			{
+				if(x>=12&&x<=12+145)
+					mode=3;
+				else if(x>=12+145+10&&x<=12+145+10+145)
+					mode=1;
+				else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
+					mode=2;
+			}
+		}
+		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err);
+	}	
 }
