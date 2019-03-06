@@ -202,7 +202,7 @@ void led1_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
-	u8 mode=2;
+	u8 mode=3;
 	colorqueue *cq1=&cqa,*cq2=&cqb;
 	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
