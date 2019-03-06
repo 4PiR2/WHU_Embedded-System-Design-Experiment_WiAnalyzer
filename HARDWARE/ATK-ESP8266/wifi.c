@@ -14,24 +14,12 @@ static char adddata(wifiqueue *q,wifiinfo *d)
 	q->len++;
 	return 0;
 }
-static char compare(wifiinfo *d1,wifiinfo *d2)
-{
-	char i;
-	for(i=0;i<12;i++)
-	{
-		if(d1->mac[i]>d2->mac[i])
-			return 2;
-		else if(d1->mac[i]<d2->mac[i])
-			return 0;
-	}
-	return 1;
-}
 static short max(wifiqueue *q,short n,short i,short j,short k)
 {
 	short m=i;
-	if(j<n&&compare(q->pointer[j],q->pointer[m])>1)
+	if(j<n&&q->pointer[j]->mac>q->pointer[m]->mac)
 		m=j;
-	if(k<n&&compare(q->pointer[k],q->pointer[m])>1)
+	if(k<n&&q->pointer[k]->mac>q->pointer[m]->mac)
 		m=k;
 	return m;
 }
@@ -131,22 +119,55 @@ static char readstring(char **str,char *dst)
 	(*str)++;
 	return count;
 }
-static char readmac(char **str,char *dst)
+static char readmac(char **str,long long *mac)
 {
 	char tmp[17],i;
+	*mac=0;
 	if(readstring(str,tmp)!=17)
 		return -1;
 	for(i=0;i<17;i++)
 	{
-		if(i%3==2)
-			continue;
-		*dst++=tmp[i];
+		switch(tmp[i])
+		{
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				*mac=*mac<<4|tmp[i]-'0';
+				break;
+			case 'A':
+			case 'B':
+			case 'C':
+			case 'D':
+			case 'E':
+			case 'F':
+				*mac=*mac<<4|tmp[i]-'A'+10;
+				break;
+			case 'a':
+			case 'b':
+			case 'c':
+			case 'd':
+			case 'e':
+			case 'f':
+				*mac=*mac<<4|tmp[i]-'a'+10;
+			case ':':
+				break;
+			default:
+				return -1;
+		}
 	}
 	return 0;
 }
 static char readinfo(wifiqueue *q,char *str)
 {
 	wifiinfo d;
+	u8 ssidlen;
 	while(1)
 	{
 		//printf("p%d\n%s\n",check(str),str);
@@ -157,10 +178,11 @@ static char readinfo(wifiqueue *q,char *str)
 				if(*str++!='(') return -1;
 				d.ecn=readint(&str);
 				if(*str++!=',') return -1;
-				d.ssidlen=readstring(&str,d.ssid);
-				if(d.ssidlen>32||*str++!=',') return -1;
+				ssidlen=readstring(&str,d.ssid);
+				if(ssidlen>32||*str++!=',') return -1;
+				d.ssid[ssidlen]=0;
 				d.rssi=readint(&str);
-				if(*str++!=','||readmac(&str,d.mac)||*str++!=',') return -1;
+				if(*str++!=','||readmac(&str,&d.mac)||*str++!=',') return -1;
 				d.channel=readint(&str);
 				if(*str++!=',') return -1;
 				d.freqoffset=readint(&str);

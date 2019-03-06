@@ -69,14 +69,13 @@ extern const u8* ATK_ESP8266_ECN_TBL[5];
 #define QLEN 30
 typedef struct
 {
-	char ecn;
-	char ssidlen;
-	char rssi;
-	char channel;
-	char ssid[32];
-	char mac[12];
+	long long mac;
 	short freqoffset;
 	short freqcali;
+	char ssid[33];
+	char ecn;
+	char rssi;
+	char channel;
 	char pairwisecipher;
 	char groupcipher;
 	char bgn;

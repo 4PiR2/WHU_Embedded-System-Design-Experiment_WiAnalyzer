@@ -42,7 +42,7 @@ CPU_STK LED0_TASK_STK[LED0_STK_SIZE];
 void led0_task(void *p_arg);
 
 //任务优先级
-#define LED1_TASK_PRIO		7
+#define LED1_TASK_PRIO		5
 //任务堆栈大小	
 #define LED1_STK_SIZE 		128
 //任务控制块
@@ -62,6 +62,8 @@ OS_TCB	FloatTaskTCB;
 __align(8) CPU_STK	FLOAT_TASK_STK[FLOAT_STK_SIZE];
 //任务函数
 void float_task(void *p_arg);
+
+OS_SEM	MY_SEM;		//定义一个信号量，用于访问共享资源
 
 int main(void)
 {
@@ -121,6 +123,11 @@ void start_task(void *p_arg)
 #endif		
 	
 	OS_CRITICAL_ENTER();	//进入临界区
+	//创建一个信号量
+	OSSemCreate ((OS_SEM*	)&MY_SEM,
+                 (CPU_CHAR*	)"MY_SEM",
+                 (OS_SEM_CTR)1,		
+                 (OS_ERR*	)&err);
 	//创建LED0任务
 	OSTaskCreate((OS_TCB 	* )&Led0TaskTCB,		
 				 (CPU_CHAR	* )"led0 task", 		
@@ -173,17 +180,16 @@ wifiqueue q;
 //led0任务函数
 void led0_task(void *p_arg)
 {
-	CPU_SR_ALLOC();
 	OS_ERR err;
 	p_arg = p_arg;
 	while(1)
 	{
 		LED0=0;
 		LED0=1;
-		//OS_CRITICAL_ENTER();
 		printf("777\n");
+		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		atk_8266_search_wifi(&q,2000);
-		//OS_CRITICAL_EXIT();
+		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
 		for(int i=0;i<q.len;i++)
 		{
 			printf("%d,-%d,%s\n",(*(q.pointer[i])).channel,~(*(q.pointer[i])).rssi+1&0xFF,(*(q.pointer[i])).ssid);
@@ -193,47 +199,47 @@ void led0_task(void *p_arg)
 }
 
 u16 X0=38,Y0=110,DX=27,DY=65,LFSIZE=16;
-void drawtrapeziod(u8 channel,u8 rssi,char *ssid,u8 ssidlen);
+void drawtrapeziod(u8 channel,u8 rssi,char *ssid);
 //led1任务函数
 void led1_task(void *p_arg)
 {
-	POINT_COLOR=RED;      //画笔颜色：红色
+	//POINT_COLOR=RED;      //画笔颜色：红色
 	OS_ERR err;
 	p_arg = p_arg;
-	CPU_SR_ALLOC();
 	//LCD_Display_Dir(1);
 	u8 i,*labels[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13"};
-	POINT_COLOR=GRAY;
-	for(i=0;i<=10;i++)
-		LCD_DrawLine(X0,Y0+DY*i,X0+DX*16,Y0+DY*i);
-	for(i=0;i<=16;i++)
-		LCD_DrawLine(X0+DX*i,Y0,X0+DX*i,Y0+DY*10);
-	for(i=0;i<=10;i++)
-		LCD_ShowString(X0-strlen((char *)labels[i])*LFSIZE/2,Y0+DY*i-LFSIZE/2,strlen((char *)labels[i])*LFSIZE/2,LFSIZE,LFSIZE,labels[i]);
-	for(i=2;i<=14;i++)
-		LCD_ShowString(X0+DX*i-strlen((char *)labels[9+i])*LFSIZE/4,Y0+DY*10,strlen((char *)labels[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels[9+i]);
-	delay_ms(10000);
-	POINT_COLOR=RED;
-	for(i=0;i<q.len;i++)
-		drawtrapeziod(q.data[i].channel,q.data[i].rssi,q.data[i].ssid,q.data[i].ssidlen);
-	while(0)
+	while(1)
 	{
 		LED1=~LED1;
-		OS_CRITICAL_ENTER();
 		//LCD_Clear(BLUE);
-		LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");	
+		//LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");	
 		//printf("i: %d\n",RNG_Get_RandomNum());
-		gui_fill_circle(200,200,100,GREEN);
-		LCD_DrawRectangle(100,100,470,790);
-		OS_CRITICAL_EXIT();
-		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
+		//gui_fill_circle(200,200,100,GREEN);
+		//LCD_DrawRectangle(100,100,470,790);
+		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
+		LCD_Fill(0,Y0,480,800,WHITE);
+		POINT_COLOR=GRAY;
+		for(i=0;i<=10;i++)
+			LCD_DrawLine(X0,Y0+DY*i,X0+DX*16,Y0+DY*i);
+		for(i=0;i<=16;i++)
+			LCD_DrawLine(X0+DX*i,Y0,X0+DX*i,Y0+DY*10);
+		for(i=0;i<=10;i++)
+			LCD_ShowString(X0-strlen((char *)labels[i])*LFSIZE/2,Y0+DY*i-LFSIZE/2,strlen((char *)labels[i])*LFSIZE/2,LFSIZE,LFSIZE,labels[i]);
+		for(i=2;i<=14;i++)
+			LCD_ShowString(X0+DX*i-strlen((char *)labels[9+i])*LFSIZE/4,Y0+DY*10,strlen((char *)labels[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels[9+i]);
+		POINT_COLOR=RED;
+		for(i=0;i<q.len;i++)
+			drawtrapeziod(q.data[i].channel,q.data[i].rssi,q.data[i].ssid);
+		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
+		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
 	}
 }
 
-void drawtrapeziod(u8 channel,u8 rssi,char *ssid,u8 ssidlen)
+void drawtrapeziod(u8 channel,u8 rssi,char *ssid)
 {
 	u16 r=256-rssi,xb=X0+DX*channel,xa=xb-DX,xc=xb+DX*2,xd=xc+DX,
 		ya=Y0+DY*10,yb=Y0+DY*r/10,yc=yb,yd=ya;
+	u8 ssidlen=strlen(ssid);
 	LCD_DrawLine(xa,ya,xb,yb);
 	LCD_DrawLine(xb,yb,xc,yc);
 	LCD_DrawLine(xc,yc,xd,yd);
