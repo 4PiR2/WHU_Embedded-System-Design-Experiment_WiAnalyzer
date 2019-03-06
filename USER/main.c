@@ -6,8 +6,9 @@
 #include "led.h"
 #include "lcd.h"
 #include "touch.h"
-#include "wifi.h"
 #include "rng.h"
+#include "ui.h"
+
 //UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
 //优先级0：中断服务服务管理任务 OS_IntQTask()
@@ -182,6 +183,7 @@ void led0_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
+	atk_8266_set(2000);
 	while(1)
 	{
 		LED0=0;
@@ -198,52 +200,29 @@ void led0_task(void *p_arg)
 	}
 }
 
-u16 X0=38,Y0=110,DX=27,DY=65,LFSIZE=16;
-void drawtrapeziod(u8 channel,u8 rssi,char *ssid);
+colorqueue cqa,cqb;
 //led1任务函数
 void led1_task(void *p_arg)
 {
-	//POINT_COLOR=RED;      //画笔颜色：红色
 	OS_ERR err;
 	p_arg = p_arg;
+	colorqueue *cq1=&cqa,*cq2=&cqb;
+	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
-	u8 i,*labels[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13"};
+	POINT_COLOR=RED;      //画笔颜色：红色
+	LCD_ShowString(38,45,250,24,24,"Wi-Fi Analyzer");
 	while(1)
 	{
 		LED1=~LED1;
 		//LCD_Clear(BLUE);
-		//LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");	
-		//printf("i: %d\n",RNG_Get_RandomNum());
+		//LCD_ShowString(-30,40,210,24,16,"Explorer STM32F4");
 		//gui_fill_circle(200,200,100,GREEN);
 		//LCD_DrawRectangle(100,100,470,790);
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		LCD_Fill(0,Y0,480,800,WHITE);
-		POINT_COLOR=GRAY;
-		for(i=0;i<=10;i++)
-			LCD_DrawLine(X0,Y0+DY*i,X0+DX*16,Y0+DY*i);
-		for(i=0;i<=16;i++)
-			LCD_DrawLine(X0+DX*i,Y0,X0+DX*i,Y0+DY*10);
-		for(i=0;i<=10;i++)
-			LCD_ShowString(X0-strlen((char *)labels[i])*LFSIZE/2,Y0+DY*i-LFSIZE/2,strlen((char *)labels[i])*LFSIZE/2,LFSIZE,LFSIZE,labels[i]);
-		for(i=2;i<=14;i++)
-			LCD_ShowString(X0+DX*i-strlen((char *)labels[9+i])*LFSIZE/4,Y0+DY*10,strlen((char *)labels[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels[9+i]);
-		POINT_COLOR=RED;
-		for(i=0;i<q.len;i++)
-			drawtrapeziod(q.data[i].channel,q.data[i].rssi,q.data[i].ssid);
+		drawui(&cq1,&cq2,&q);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
 		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
 	}
-}
-
-void drawtrapeziod(u8 channel,u8 rssi,char *ssid)
-{
-	u16 r=256-rssi,xb=X0+DX*channel,xa=xb-DX,xc=xb+DX*2,xd=xc+DX,
-		ya=Y0+DY*10,yb=Y0+DY*r/10,yc=yb,yd=ya;
-	u8 ssidlen=strlen(ssid);
-	LCD_DrawLine(xa,ya,xb,yb);
-	LCD_DrawLine(xb,yb,xc,yc);
-	LCD_DrawLine(xc,yc,xd,yd);
-	LCD_ShowString(xb+DX-ssidlen*LFSIZE/4,yb-LFSIZE,ssidlen*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ssid);
 }
 
 void ctp_test();

@@ -236,3 +236,23 @@ u8 atk_8266_search_wifi(wifiqueue *q,short waittime)
 	if(waittime==0) return 1;
 	return 0;
 } 
+
+u8 atk_8266_set(short waittime)
+{
+	USART3_RX_STA=0;
+	u3_printf("%s\r\n","AT+CWLAPOPT=1,2047");	//发送命令
+	while(--waittime)	//等待倒计时
+	{
+		delay_ms(10);
+		if(USART3_RX_STA&0X8000)		//接收到一次数据了
+		{ 
+			USART3_RX_BUF[USART3_RX_STA&0X7FFF]=0;//添加结束符
+			if(0)
+				USART3_RX_STA=0;
+			else
+				break;
+		}
+	}
+	if(waittime==0) return 1;
+	return 0;
+} 

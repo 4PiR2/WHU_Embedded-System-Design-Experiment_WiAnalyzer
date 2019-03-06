@@ -87,3 +87,4 @@ typedef struct
 	short len;
 } wifiqueue;
 u8 atk_8266_search_wifi(wifiqueue *q,short waittime);
+u8 atk_8266_set(short waittime);
