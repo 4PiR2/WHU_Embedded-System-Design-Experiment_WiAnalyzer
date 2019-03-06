@@ -192,7 +192,7 @@ void led0_task(void *p_arg)
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		atk_8266_search_wifi(&q,2000);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
+		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
@@ -202,7 +202,7 @@ void led1_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
-	u8 mode=1;
+	u8 mode=2;
 	colorqueue *cq1=&cqa,*cq2=&cqb;
 	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
@@ -213,14 +213,10 @@ void led1_task(void *p_arg)
 	LCD_ShowString(38,45,250,24,24,"Wi-Fi Analyzer");
 	while(1)
 	{
-		printf("nnn\n");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		drawui(mode,&cq1,&cq2,&q);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		printf("lll\n");
-		OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
-		//delay_ms(1000);
-		printf("ppp\n");
+		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时500ms
 	}
 }
 
@@ -256,7 +252,7 @@ void ctp_test(void)
 			}else lastpos[t][0]=0XFFFF;
 		}
 		
-		delay_ms(5);i++;
+		delay_ms(50);i++;
 		if(i%20==0)LED0=!LED0;
 	}	
 }
@@ -273,6 +269,6 @@ void float_task(void *p_arg)
 		OS_CRITICAL_ENTER();	//进入临界区
 		//printf("float_num的值为: %.4f\r\n",float_num);
 		OS_CRITICAL_EXIT();		//退出临界区
-		delay_ms(1000);			//延时500ms
+		delay_ms(2000);			//延时500ms
 	}
 }

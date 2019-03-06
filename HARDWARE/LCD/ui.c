@@ -3,8 +3,8 @@
 #include "lcd.h"
 #include "rng.h"
 
-static const u16 X0=38,Y0=110,DX=27,DY=65,LFSIZE=16;
-static u8 *labels[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13","RSSI/dBm","Channels"};
+static const u16 X1=38,Y1=110,DX1=27,DY1=65,LFSIZE=16;
+static u8 *labels1[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13","RSSI/dBm","Channels"};
 
 static char adddata(colorqueue *cq,colorinfo *d)
 {
@@ -32,45 +32,89 @@ void drawchannelgrid()
 	LCD_Fill(0,90,480,800,WHITE);
 	POINT_COLOR=LGRAY;
 	for(i=0;i<=10;i++)
-		LCD_DrawLine(X0,Y0+DY*i,X0+DX*16,Y0+DY*i);
+		LCD_DrawLine(X1,Y1+DY1*i,X1+DX1*16,Y1+DY1*i);
 	for(i=0;i<=16;i++)
-		LCD_DrawLine(X0+DX*i,Y0,X0+DX*i,Y0+DY*10);
+		LCD_DrawLine(X1+DX1*i,Y1,X1+DX1*i,Y1+DY1*10);
 	POINT_COLOR=BLACK;
 	for(i=0;i<=10;i++)
-		LCD_ShowString(X0-strlen((char *)labels[i])*LFSIZE/2,Y0+DY*i-LFSIZE/2,strlen((char *)labels[i])*LFSIZE/2,LFSIZE,LFSIZE,labels[i]);
+		LCD_ShowString(X1-strlen((char *)labels1[i])*LFSIZE/2,Y1+DY1*i-LFSIZE/2,strlen((char *)labels1[i])*LFSIZE/2,LFSIZE,LFSIZE,labels1[i]);
 	for(i=2;i<=14;i++)
-		LCD_ShowString(X0+DX*i-strlen((char *)labels[9+i])*LFSIZE/4,Y0+DY*10,strlen((char *)labels[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels[9+i]);
-	LCD_ShowString(5,Y0+DY*10+LFSIZE,strlen((char *)labels[24])*LFSIZE/2,LFSIZE,LFSIZE,labels[24]);
-	LCD_ShowString(X0+DX*8-strlen((char *)labels[25])*LFSIZE/4,Y0+DY*10+LFSIZE,strlen((char *)labels[25])*LFSIZE/2,LFSIZE,LFSIZE,labels[25]);
+		LCD_ShowString(X1+DX1*i-strlen((char *)labels1[9+i])*LFSIZE/4,Y1+DY1*10,strlen((char *)labels1[9+i])*LFSIZE/2,LFSIZE,LFSIZE,labels1[9+i]);
+	LCD_ShowString(5,Y1+DY1*10+LFSIZE,strlen((char *)labels1[24])*LFSIZE/2,LFSIZE,LFSIZE,labels1[24]);
+	LCD_ShowString(X1+DX1*8-strlen((char *)labels1[25])*LFSIZE/4,Y1+DY1*10+LFSIZE,strlen((char *)labels1[25])*LFSIZE/2,LFSIZE,LFSIZE,labels1[25]);
 }
 void drawtrapeziod(colorinfo *d)
 {
 	char *ssid=d->wifi.ssid;
 	u8 channel=d->wifi.channel,rssi=d->wifi.rssi,ssidlen=strlen(ssid);
-	u16 r=256-rssi,xb=X0+DX*channel,xa=xb-DX,xc=xb+DX*2,xd=xc+DX,
-		ya=Y0+DY*10,yb=Y0+DY*r/10,yc=yb,yd=ya;
+	u16 r=(256-rssi)%256,xb=X1+DX1*channel,xa=xb-DX1,xc=xb+DX1*2,xd=xc+DX1,
+		ya=Y1+DY1*10,yb=Y1+DY1*r/10,yc=yb,yd=ya;
 	if(!(rssi^0x80))
 		return;
 	POINT_COLOR=d->color;
 	LCD_DrawLine(xa,ya,xb,yb);
 	LCD_DrawLine(xb,yb,xc,yc);
 	LCD_DrawLine(xc,yc,xd,yd);
-	LCD_ShowString(xb+DX-ssidlen*LFSIZE/4,yb-LFSIZE,ssidlen*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ssid);
+	LCD_ShowString(xb+DX1-ssidlen*LFSIZE/4,yb-LFSIZE,ssidlen*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ssid);
 }
+
+
+static const u16 X2=38,Y2=100,DX2=(480-X2)/(TLEN-1),DY2=40;
+static u8 *labels2[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","RSSI/dBm","Scan Count"};
+void drawtimegrid()
+{
+	u8 i;
+	LCD_Fill(0,90,480,800,WHITE);
+	POINT_COLOR=LGRAY;
+	for(i=0;i<=10;i++)
+		LCD_DrawLine(X2,Y2+DY2*i,X2+DX2*(TLEN-1),Y2+DY2*i);
+	for(i=0;i<=TLEN-1;i++)
+		LCD_DrawLine(X2+DX2*i,Y2,X2+DX2*i,Y2+DY2*10);
+	POINT_COLOR=BLACK;
+	for(i=0;i<=10;i++)
+		LCD_ShowString(X2-strlen((char *)labels2[i])*LFSIZE/2,Y2+DY2*i-LFSIZE/2,strlen((char *)labels2[i])*LFSIZE/2,LFSIZE,LFSIZE,labels2[i]);
+	LCD_ShowString(5,Y2+DY2*10+LFSIZE/2,strlen((char *)labels2[11])*LFSIZE/2,LFSIZE,LFSIZE,labels2[11]);
+	LCD_ShowString(X2+DX2*(TLEN-1)/2-strlen((char *)labels2[12])*LFSIZE/4,Y2+DY2*10+LFSIZE/2,strlen((char *)labels2[12])*LFSIZE/2,LFSIZE,LFSIZE,labels2[12]);
+}
+void drawpolyline(colorinfo *d,int time,int order)
+{
+	char ssid[38];
+	int i;
+	u8 ra=(256-d->strength[time])%256,rb,channel=d->wifi.channel,ssidlen=strlen(ssid);
+	u16 xa,xb,ya,yb;
+	sprintf(ssid,"%s (%d)",d->wifi.ssid,d->wifi.channel);
+	POINT_COLOR=d->color;
+	xa=X2+DX2*(TLEN-1);
+	ya=Y2+DY2*ra/10;
+	LCD_Fill(LFSIZE/2+order%2*240,Y2+DY2*10+LFSIZE*3/2+order/2*(LFSIZE+2)+2,LFSIZE+LFSIZE/2+order%2*240,LFSIZE+Y2+DY2*10+LFSIZE*3/2+order/2*(LFSIZE+2)+2,d->color);
+	LCD_ShowString(LFSIZE+LFSIZE/2+order%2*240+2,Y2+DY2*10+LFSIZE*3/2+order/2*(LFSIZE+2)+2,(strlen(ssid)+3)*LFSIZE,LFSIZE,LFSIZE,(u8 *)ssid);
+	for(i=1;i<TLEN;i++)
+	{
+		rb=(256-d->strength[(TLEN+time-i)%TLEN])%256;
+		xb=X2+DX2*(TLEN-1-i);
+		yb=Y2+DY2*rb/10;
+		if(ra!=128&&rb!=128)
+			LCD_DrawLine(xa,ya,xb,yb);
+		xa=xb;
+		ya=yb;
+		ra=rb;
+	}
+}
+	
 
 void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 {
 		colorqueue *cq2;
 		colorinfo d;
 		u8 i=0,j=0,k;
-		static u8 time=0;
+		static int time=0;
 		while(i<q->len&&j<(*cq0)->len)
 		{
 			if(q->pointer[i]->mac<(*cq0)->data[j].wifi.mac)
 			{
 				d.wifi=*q->pointer[i];
 				d.color=getrandomcolor();
-				memset(d.strength,0,TLEN*sizeof(char));
+				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
 				adddata(*cq1,&d);
 				i++;
@@ -85,9 +129,9 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 			}
 			else
 			{
-				(*cq0)->data[j].wifi.rssi=(*cq0)->data[j].strength[time]=0x80;
+				(*cq0)->data[j].wifi.rssi=(*cq0)->data[j].strength[time]=-128;
 				for(k=0;k<TLEN;k++)
-					if((*cq0)->data[j].strength[time]^0x80)
+					if((*cq0)->data[j].strength[k]!=128)
 						break;
 				if(k!=TLEN)
 					adddata(*cq1,&(*cq0)->data[j]);
@@ -98,16 +142,16 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 		{
 				d.wifi=*q->pointer[i];
 				d.color=getrandomcolor();
-				memset(d.strength,0,TLEN*sizeof(char));
+				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
 				adddata(*cq1,&d);
 				i++;
 		}
 		while(j<(*cq0)->len)
 		{
-				(*cq0)->data[j].wifi.rssi=(*cq0)->data[j].strength[time]=0x80;
+				(*cq0)->data[j].wifi.rssi=(*cq0)->data[j].strength[time]=-128;
 				for(k=0;k<TLEN;k++)
-					if((*cq0)->data[j].strength[time]^0x80)
+					if((*cq0)->data[j].strength[k]!=128)
 						break;
 				if(k!=TLEN)
 					adddata(*cq1,&(*cq0)->data[j]);
@@ -119,6 +163,11 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 				drawchannelgrid();
 				for(i=0;i<(*cq1)->len;i++)
 					drawtrapeziod(&(*cq1)->data[i]);
+				break;
+			case 2:
+				drawtimegrid();
+				for(i=0;i<(*cq1)->len;i++)
+					drawpolyline(&(*cq1)->data[i],time,i);
 				break;
 		}
 		cq2=*cq1;
