@@ -8,6 +8,7 @@
 #include "touch.h"
 #include "rng.h"
 #include "ui.h"
+#include "remote.h"
 
 //UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
@@ -80,6 +81,7 @@ int main(void)
  	LCD_Init();           //初始化LCD FSMC接口
 	tp_dev.init();
 	RNG_Init();
+	Remote_Init();				//红外接收初始化	
 	
 	OSInit(&err);		//初始化UCOSIII
 	OS_CRITICAL_ENTER();//进入临界区
@@ -239,21 +241,34 @@ void float_task(void *p_arg)
 	u16 x,y;	  	    
 	while(1)
 	{
-		tp_dev.scan(0);
-		//for(t=0;t<OTT_MAX_TOUCH;t++)
-			//if((tp_dev.sta)&(1<<t));
-		if(tp_dev.sta&1)
+		switch(Remote_Scan())
 		{
-			x=tp_dev.x[0];
-			y=tp_dev.y[0];
-			if(y>=40&&y<=80)
+			case 104:
+				mode=3;
+				break;
+			case 152:
+				mode=1;
+				break;
+			case 176:
+				mode=2;
+				break;
+			default:
+			tp_dev.scan(0);
+			//for(t=0;t<OTT_MAX_TOUCH;t++)
+				//if((tp_dev.sta)&(1<<t));
+			if(tp_dev.sta&1)
 			{
-				if(x>=12&&x<=12+145)
-					mode=3;
-				else if(x>=12+145+10&&x<=12+145+10+145)
-					mode=1;
-				else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
-					mode=2;
+				x=tp_dev.x[0];
+				y=tp_dev.y[0];
+				if(y>=40&&y<=80)
+				{
+					if(x>=12&&x<=12+145)
+						mode=3;
+					else if(x>=12+145+10&&x<=12+145+10+145)
+						mode=1;
+					else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
+						mode=2;
+				}
 			}
 		}
 		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err);
