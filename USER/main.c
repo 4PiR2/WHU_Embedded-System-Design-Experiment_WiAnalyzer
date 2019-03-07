@@ -36,9 +36,9 @@ CPU_STK START_TASK_STK[START_STK_SIZE];
 void start_task(void *p_arg);
 
 //任务优先级
-#define LED0_TASK_PRIO		4
+#define LED0_TASK_PRIO		6
 //任务堆栈大小	
-#define LED0_STK_SIZE 		128
+#define LED0_STK_SIZE 		256
 //任务控制块
 OS_TCB Led0TaskTCB;
 //任务堆栈	
@@ -57,7 +57,7 @@ CPU_STK LED1_TASK_STK[LED1_STK_SIZE];
 void led1_task(void *p_arg);
 
 //任务优先级
-#define FLOAT_TASK_PRIO		6
+#define FLOAT_TASK_PRIO		4
 //任务堆栈大小
 #define FLOAT_STK_SIZE		128
 //任务控制块
@@ -184,31 +184,32 @@ void start_task(void *p_arg)
 }
 
 static wifiqueue q;
+static colorqueue cqa,cqb,*cq0=&cqa,*cq1=&cqb;
+static u8 mode=3;
+
 void led0_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
 	atk_8266_set(2000);
+	cq0->len=cq1->len=0;
 	while(1)
 	{
 		LED0=1;
-		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		atk_8266_search_wifi(&q,2000);
-		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
 		LED0=0;
-		OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
+		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
+		prepareui(&cq0,&cq1,&q);
+		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
+		OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
-static colorqueue cqa,cqb;
-static u8 mode=3;
 void led1_task(void *p_arg)
 {
 	OS_ERR err;
-	p_arg = p_arg;
 	u8 mode0;
-	colorqueue *cq1=&cqa,*cq2=&cqb;
-	cq1->len=cq2->len=0;
+	p_arg = p_arg;
 	//LCD_Display_Dir(1);
 			//LCD_Clear(BLUE);
 		//gui_fill_circle(200,200,100,GREEN);
@@ -226,10 +227,9 @@ void led1_task(void *p_arg)
 		LCD_Fill(12+145+10+145+10,40,12+145+10+145+10+145,80,mode0==2?YELLOW:LIGHTGREEN);
 		LCD_ShowString(12+145+10+145+10+32,40+12,10*16,16,16,"Time Graph");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		drawui(mode0,&cq1,&cq2,&q);
+		drawui(mode0,&cq0,&cq1);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		if(mode0==mode)
-			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
+		OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
@@ -291,8 +291,11 @@ void float_task(void *p_arg)
 			}
 		}
 		if(mode0!=mode)
+		{
 			BEEP=1;
-		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);
+			OSTimeDlyResume((OS_TCB *)&Led1TaskTCB,&err);
+		}
+		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err);
 		BEEP=0;
 	}	
 }

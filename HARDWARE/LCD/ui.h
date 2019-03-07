@@ -11,8 +11,10 @@ typedef struct
 typedef struct
 {
 	colorinfo data[CQLEN];
-	short len;
+	colorinfo *rssiindex[QLEN];
+	short len,indexlen;
 	char time;
 } colorqueue;
 
-void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q);
+void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q);
+void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1);

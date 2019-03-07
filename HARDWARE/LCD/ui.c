@@ -6,11 +6,13 @@
 static const u16 X1=38,Y1=110,DX1=27,DY1=65,LFSIZE=16;
 static u8 *labels1[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","1","2","3","4","5","6","7","8","9","10","11","12","13","RSSI/dBm","Channels"};
 
-static char adddata(colorqueue *cq,colorinfo *d)
+static char adddata(colorqueue *cq,colorinfo *d,int index)
 {
 	if(cq->len>=CQLEN)
 		return -1;
 	cq->data[cq->len]=*d;
+	if(index<QLEN)
+		cq->rssiindex[index]=&cq->data[cq->len];
 	cq->len++;
 	return 0;
 }
@@ -102,18 +104,17 @@ void drawpolyline(colorinfo *d,int time,int order)
 }
 	
 static const u16 X3=5,Y3=90,DY3=LFSIZE*2;
-static u8 *labels3[]={""};
-void drawform(wifiinfo *d,int order)
+void drawform(colorinfo *d,int order)
 {
 	char c,tmp[24],
 *ecn[]={"OPEN","WEP","WPA_PSK","WPA2_PSK","WPA_WPA2_PSK","WPA2_Enterprise"},
 *bgn[]={"","b","g","b/g","n","b/n","g/n","b/g/n"};
-	long long mac=d->mac;
+	long long mac=d->wifi.mac;
 	int i;
 	POINT_COLOR=BLACK;
 	LCD_DrawLine(0,Y3+DY3*order,479,Y3+DY3*order);
 	LCD_DrawLine(0,Y3+DY3*(order+1),479,Y3+DY3*(order+1));
-	LCD_ShowString(X3,Y3+DY3*order,32*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)d->ssid);
+	LCD_ShowString(X3,Y3+DY3*order,32*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)d->wifi.ssid);
 	tmp[17]=0;
 	for(i=16;i>=0;i--)
 	{
@@ -127,28 +128,27 @@ void drawform(wifiinfo *d,int order)
 		tmp[i]=c>9?c-10+'a':c+'0';
 	}
 	LCD_ShowString(479-X3-17*LFSIZE/2,Y3+DY3*order,17*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
-	sprintf(tmp,"-%ddBm",(256-d->rssi)%256);
+	sprintf(tmp,"%ddBm",-(256-d->wifi.rssi)%256);
 	LCD_ShowString(X3,Y3+DY3*order+LFSIZE,7*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
-	sprintf(tmp,"CH%2d %d(%d-%d)MHz",d->channel,2407+d->channel*5,2407+d->channel*5-10,2407+d->channel*5+10);
+	sprintf(tmp,"CH%2d %d(%d-%d)MHz",d->wifi.channel,2407+d->wifi.channel*5,2407+d->wifi.channel*5-10,2407+d->wifi.channel*5+10);
 	tmp[2]=tmp[2]==' '?'0':'1';
 	LCD_ShowString(X3+10+7*LFSIZE/2,Y3+DY3*order+LFSIZE,23*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
-	if(d->bgn)
+	if(d->wifi.bgn)
 	{
-		sprintf(tmp,"%s",bgn[d->bgn]);
+		sprintf(tmp,"%s",bgn[d->wifi.bgn]);
 		LCD_ShowString(X3+10*2+(7+23)*LFSIZE/2,Y3+DY3*order+LFSIZE,5*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
 	}
-	if(d->ecn)
-		LCD_ShowString(X3+10*3+(7+23+5)*LFSIZE/2,Y3+DY3*order+LFSIZE,15*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ecn[d->ecn]);
-	if(d->wps)
+	if(d->wifi.ecn)
+		LCD_ShowString(X3+10*3+(7+23+5)*LFSIZE/2,Y3+DY3*order+LFSIZE,15*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ecn[d->wifi.ecn]);
+	if(d->wifi.wps)
 		LCD_ShowString(479-X3-3*LFSIZE/2,Y3+DY3*order+LFSIZE,3*LFSIZE/2,LFSIZE,LFSIZE,"WPS");
 }
 
-void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
+void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 {
 		colorqueue *cq2;
 		colorinfo d;
-		u8 i=0,j=0,k;
-		static int time=0;
+		u8 i=0,j=0,k,index,time=((*cq0)->time+1)%TLEN;
 		while(i<q->len&&j<(*cq0)->len)
 		{
 			if(q->pointer[i]->mac<(*cq0)->data[j].wifi.mac)
@@ -157,14 +157,14 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 				d.color=getrandomcolor();
 				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
-				adddata(*cq1,&d);
+				adddata(*cq1,&d,q->pointer[i]-q->data);
 				i++;
 			}
 			else if(q->pointer[i]->mac==(*cq0)->data[j].wifi.mac)
 			{
 				(*cq0)->data[j].wifi=*q->pointer[i];
 				(*cq0)->data[j].strength[time]=(*cq0)->data[j].wifi.rssi;
-				adddata(*cq1,&(*cq0)->data[j]);
+				adddata(*cq1,&(*cq0)->data[j],q->pointer[i]-q->data);
 				i++;
 				j++;
 			}
@@ -175,7 +175,7 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 					if((*cq0)->data[j].strength[k]!=128)
 						break;
 				if(k!=TLEN)
-					adddata(*cq1,&(*cq0)->data[j]);
+					adddata(*cq1,&(*cq0)->data[j],QLEN);
 				j++;
 			}
 		}
@@ -185,7 +185,7 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 				d.color=getrandomcolor();
 				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
-				adddata(*cq1,&d);
+				adddata(*cq1,&d,q->pointer[i]-q->data);
 				i++;
 		}
 		while(j<(*cq0)->len)
@@ -195,30 +195,35 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 					if((*cq0)->data[j].strength[k]!=128)
 						break;
 				if(k!=TLEN)
-					adddata(*cq1,&(*cq0)->data[j]);
+					adddata(*cq1,&(*cq0)->data[j],QLEN);
 				j++;
 		}
-		switch(mode)
-		{
-			case 1:
-				drawchannelgrid();
-				for(i=0;i<(*cq1)->len;i++)
-					drawtrapeziod(&(*cq1)->data[i]);
-				break;
-			case 2:
-				drawtimegrid();
-				for(i=0;i<(*cq1)->len;i++)
-					drawpolyline(&(*cq1)->data[i],time,i);
-				break;
-			case 3:
-				LCD_Fill(0,90,479,799,WHITE);
-				for(i=0;i<q->len;i++)
-					drawform(&q->data[i],i);
-				break;
-		}
+		(*cq1)->indexlen=q->len;
+		(*cq1)->time=time;
 		cq2=*cq1;
 		*cq1=*cq0;
 		*cq0=cq2;
 		(*cq1)->len=0;
-		time=(time+1)%TLEN;
+}
+void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1)
+{
+		u8 i;
+		switch(mode)
+		{
+			case 1:
+				drawchannelgrid();
+				for(i=0;i<(*cq0)->len;i++)
+					drawtrapeziod(&(*cq0)->data[i]);
+				break;
+			case 2:
+				drawtimegrid();
+				for(i=0;i<(*cq0)->len;i++)
+					drawpolyline(&(*cq0)->data[i],(*cq0)->time,i);
+				break;
+			case 3:
+				LCD_Fill(0,90,479,799,WHITE);
+				for(i=0;i<(*cq0)->indexlen;i++)
+					drawform((*cq0)->rssiindex[i],i);
+				break;
+		}
 }
