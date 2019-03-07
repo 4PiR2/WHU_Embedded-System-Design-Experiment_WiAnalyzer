@@ -129,7 +129,7 @@ void drawform(wifiinfo *d,int order)
 	LCD_ShowString(479-X3-17*LFSIZE/2,Y3+DY3*order,17*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
 	sprintf(tmp,"-%ddBm",(256-d->rssi)%256);
 	LCD_ShowString(X3,Y3+DY3*order+LFSIZE,7*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
-	sprintf(tmp,"CH%2d %d-%d(%d)MHz",d->channel,2407+d->channel*5-10,2407+d->channel*5+10,2407+d->channel*5);
+	sprintf(tmp,"CH%2d %d(%d-%d)MHz",d->channel,2407+d->channel*5,2407+d->channel*5-10,2407+d->channel*5+10);
 	tmp[2]=tmp[2]==' '?'0':'1';
 	LCD_ShowString(X3+10+7*LFSIZE/2,Y3+DY3*order+LFSIZE,23*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)tmp);
 	if(d->bgn)

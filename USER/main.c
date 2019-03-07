@@ -9,6 +9,8 @@
 #include "rng.h"
 #include "ui.h"
 #include "remote.h"
+#include "beep.h"
+#include "key.h"
 
 //UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
@@ -82,6 +84,8 @@ int main(void)
 	tp_dev.init();
 	RNG_Init();
 	Remote_Init();				//红外接收初始化	
+	BEEP_Init();      //初始化蜂鸣器端口
+	KEY_Init();       //初始化与按键连接的硬件接口
 	
 	OSInit(&err);		//初始化UCOSIII
 	OS_CRITICAL_ENTER();//进入临界区
@@ -202,7 +206,7 @@ void led1_task(void *p_arg)
 {
 	OS_ERR err;
 	p_arg = p_arg;
-	u16 mode0;
+	u8 mode0;
 	colorqueue *cq1=&cqa,*cq2=&cqb;
 	cq1->len=cq2->len=0;
 	//LCD_Display_Dir(1);
@@ -238,39 +242,57 @@ void float_task(void *p_arg)
 	//OS_CRITICAL_EXIT();		//退出临界区
 	OS_ERR err;
 	p_arg = p_arg;
-	u16 x,y;	  	    
+	u16 x,y;	  
+	u8 mode0;	
 	while(1)
 	{
-		switch(Remote_Scan())
+		mode0=mode;
+		switch(KEY_Scan(0))
 		{
-			case 104:
-				mode=3;
-				break;
-			case 152:
-				mode=1;
-				break;
-			case 176:
+			case KEY0_PRES:
 				mode=2;
 				break;
+			case KEY1_PRES:
+				mode=1;
+				break;
+			case KEY2_PRES:
+				mode=3;
+				break;
 			default:
-			tp_dev.scan(0);
-			//for(t=0;t<OTT_MAX_TOUCH;t++)
-				//if((tp_dev.sta)&(1<<t));
-			if(tp_dev.sta&1)
+			switch(Remote_Scan())
 			{
-				x=tp_dev.x[0];
-				y=tp_dev.y[0];
-				if(y>=40&&y<=80)
+				case 104:
+					mode=3;
+					break;
+				case 152:
+					mode=1;
+					break;
+				case 176:
+					mode=2;
+					break;
+				default:
+				tp_dev.scan(0);
+				//for(t=0;t<OTT_MAX_TOUCH;t++)
+					//if((tp_dev.sta)&(1<<t));
+				if(tp_dev.sta&1)
 				{
-					if(x>=12&&x<=12+145)
-						mode=3;
-					else if(x>=12+145+10&&x<=12+145+10+145)
-						mode=1;
-					else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
-						mode=2;
+					x=tp_dev.x[0];
+					y=tp_dev.y[0];
+					if(y>=40&&y<=80)
+					{
+						if(x>=12&&x<=12+145)
+							mode=3;
+						else if(x>=12+145+10&&x<=12+145+10+145)
+							mode=1;
+						else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
+							mode=2;
+					}
 				}
 			}
 		}
-		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err);
+		if(mode0!=mode)
+			BEEP=1;
+		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);
+		BEEP=0;
 	}	
 }
