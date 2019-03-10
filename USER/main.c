@@ -216,20 +216,22 @@ void led1_task(void *p_arg)
 		//LCD_DrawRectangle(100,100,470,790);
 	POINT_COLOR=RED;      //画笔颜色：红色
 	LCD_ShowString(24,7,480,24,24,"Wi-Fi Analyzer by CJL(2016301500014)");
+	//Show_Str(30,50,200,16,"探索者STM32F407开发板",16,0);	
 	while(1)
 	{
 		mode0=mode;
 		POINT_COLOR=BLACK;
-		LCD_Fill(12,40,12+145,80,mode0==3?YELLOW:LIGHTGREEN);
-		LCD_ShowString(12+20,40+12,13*16,16,16,"Access Points");
-		LCD_Fill(12+145+10,40,12+145+10+145,80,mode0==1?YELLOW:LIGHTGREEN);
-		LCD_ShowString(12+145+10+20,40+12,13*16,16,16,"Channel Graph");
-		LCD_Fill(12+145+10+145+10,40,12+145+10+145+10+145,80,mode0==2?YELLOW:LIGHTGREEN);
-		LCD_ShowString(12+145+10+145+10+32,40+12,10*16,16,16,"Time Graph");
+		LCD_Fill(12,40,12+145,80,mode0==3?YELLOW:0X6FF);
+		LCD_ShowString(12+20,40+12,13*16,16,16,"ACCESS POINTS");
+		LCD_Fill(12+145+10,40,12+145+10+145,80,mode0==1?YELLOW:0X6FF);
+		LCD_ShowString(12+145+10+20,40+12,13*16,16,16,"CHANNEL GRAPH");
+		LCD_Fill(12+145+10+145+10,40,12+145+10+145+10+145,80,mode0==2?YELLOW:0X6FF);
+		LCD_ShowString(12+145+10+145+10+32,40+12,10*16,16,16,"TIME GRAPH");
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		drawui(mode0,&cq0,&cq1);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量
-		OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
+		if(mode0==mode)
+			OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
