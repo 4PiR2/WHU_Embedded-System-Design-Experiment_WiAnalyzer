@@ -244,8 +244,8 @@ void float_task(void *p_arg)
 	//OS_CRITICAL_EXIT();		//ÍË³öÁÙ½çÇø
 	OS_ERR err;
 	p_arg = p_arg;
-	u16 x,y;	  
-	u8 mode0;	
+	u16 x1,y1,x2,x10,x20;	  
+	u8 mode0,flag=0,minl=50;
 	while(1)
 	{
 		mode0=mode;
@@ -272,23 +272,69 @@ void float_task(void *p_arg)
 				case 176:
 					mode=2;
 					break;
+				case 34:
+					if(mode==1)
+						mode=3;
+					else if(mode==2)
+						mode=1;
+					break;
+				case 194:
+					if(mode==1)
+						mode=2;
+					else if(mode==3)
+						mode=1;
+					break;
 				default:
 				tp_dev.scan(0);
 				//for(t=0;t<OTT_MAX_TOUCH;t++)
 					//if((tp_dev.sta)&(1<<t));
-				if(tp_dev.sta&1)
+				switch(tp_dev.sta&3)
 				{
-					x=tp_dev.x[0];
-					y=tp_dev.y[0];
-					if(y>=40&&y<=80)
-					{
-						if(x>=12&&x<=12+145)
-							mode=3;
-						else if(x>=12+145+10&&x<=12+145+10+145)
-							mode=1;
-						else if(x>=12+145+10+145+10&&x<=12+145+10+145+10+145)
-							mode=2;
-					}
+					case 3:
+						x1=tp_dev.x[0];
+						x2=tp_dev.x[1];
+						if(flag)
+						{
+							if(x1<x10-minl&&x2<x20-minl)
+							{
+								if(mode==1)
+									mode=2;
+								else if(mode==3)
+									mode=1;
+								x10=x1;
+								x20=x2;
+							}
+							else if(x1>x10+minl&&x2>x20+minl)
+							{
+								if(mode==1)
+									mode=3;
+								else if(mode==2)
+									mode=1;
+								x10=x1;
+								x20=x2;
+							}
+						}
+						else
+						{
+							x10=x1;
+							x20=x2;
+							flag=1;
+						}
+						break;
+					case 1:
+						x1=tp_dev.x[0];
+						y1=tp_dev.y[0];
+						if(y1>=40&&y1<=80)
+						{
+							if(x1>=12&&x1<=12+145)
+								mode=3;
+							else if(x1>=12+145+10&&x1<=12+145+10+145)
+								mode=1;
+							else if(x1>=12+145+10+145+10&&x1<=12+145+10+145+10+145)
+								mode=2;
+						}
+					default:
+						flag=0;
 				}
 			}
 		}
