@@ -11,6 +11,7 @@
 #include "remote.h"
 #include "beep.h"
 #include "key.h"
+#include "wkup.h"
 
 //UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
@@ -86,7 +87,7 @@ int main(void)
 	Remote_Init();				//红外接收初始化	
 	BEEP_Init();      //初始化蜂鸣器端口
 	KEY_Init();       //初始化与按键连接的硬件接口
-	
+	WKUP_Init();
 	OSInit(&err);		//初始化UCOSIII
 	OS_CRITICAL_ENTER();//进入临界区
 	//创建开始任务
@@ -195,9 +196,10 @@ void led0_task(void *p_arg)
 	cq0->len=cq1->len=0;
 	while(1)
 	{
-		LED0=1;
+		printf("Scanning\n");
+		LED1=0;
 		atk_8266_search_wifi(&q,2000);
-		LED0=0;
+		LED1=1;
 		OSSemPend(&MY_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
 		prepareui(&cq0,&cq1,&q);
 		OSSemPost (&MY_SEM,OS_OPT_POST_1,&err);				//发送信号量

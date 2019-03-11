@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F40_41xxx,USE_STDPERIPH_DRIVER,__FPU_USED=1</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\FWLIB\STM32F4xx_StdPeriph_Driver\inc;..\USER;..\HARDWARE\LED;..\UCOSIII\uC-CPU;..\UCOSIII\uC-LIB;..\UCOSIII\uCOS-III;..\UCOSIII\UCOS_BSP;..\UCOSIII\uCOS_CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\HARDWARE\ATK-ESP8266;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\SPI;..\HARDWARE\24CXX;..\HARDWARE\IIC;..\HARDWARE\SDIO;..\HARDWARE\SRAM;..\HARDWARE\TIMER;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\MALLOC;..\TEXT;..\FATFS\src;..\FATFS\exfuns;..\USMART;..\HARDWARE\RNG;..\HARDWARE\REMOTE;..\HARDWARE\BEEP</IncludePath>
+              <IncludePath>..\CORE;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\FWLIB\STM32F4xx_StdPeriph_Driver\inc;..\USER;..\HARDWARE\LED;..\UCOSIII\uC-CPU;..\UCOSIII\uC-LIB;..\UCOSIII\uCOS-III;..\UCOSIII\UCOS_BSP;..\UCOSIII\uCOS_CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\HARDWARE\ATK-ESP8266;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\SPI;..\HARDWARE\24CXX;..\HARDWARE\IIC;..\HARDWARE\SDIO;..\HARDWARE\SRAM;..\HARDWARE\TIMER;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\MALLOC;..\TEXT;..\FATFS\src;..\FATFS\exfuns;..\USMART;..\HARDWARE\RNG;..\HARDWARE\REMOTE;..\HARDWARE\BEEP;..\HARDWARE\WKUP</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -476,6 +476,11 @@
               <FileName>beep.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\BEEP\beep.c</FilePath>
+            </File>
+            <File>
+              <FileName>wkup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\WKUP\wkup.c</FilePath>
             </File>
           </Files>
         </Group>
