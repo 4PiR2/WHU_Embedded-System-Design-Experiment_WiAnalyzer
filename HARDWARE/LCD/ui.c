@@ -60,7 +60,6 @@ void drawtrapeziod(colorinfo *d)
 	LCD_ShowString(xb+DX1-ssidlen*LFSIZE/4,yb-LFSIZE,ssidlen*LFSIZE/2,LFSIZE,LFSIZE,(u8 *)ssid);
 }
 
-
 static const u16 X2=38,Y2=100,DX2=(479-X2)/(TLEN-1),DY2=40;
 static u8 *labels2[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","RSSI/dBm","Scan Count"};
 void drawtimegrid()
@@ -107,8 +106,8 @@ static const u16 X3=5,Y3=90,DY3=LFSIZE*2;
 void drawform(colorinfo *d,int order)
 {
 	char c,tmp[24],
-*ecn[]={"OPEN","WEP","WPA_PSK","WPA2_PSK","WPA_WPA2_PSK","WPA2_Enterprise"},
-*bgn[]={"","b","g","b/g","n","b/n","g/n","b/g/n"};
+    *ecn[]={"OPEN","WEP","WPA_PSK","WPA2_PSK","WPA_WPA2_PSK","WPA2_Enterprise"},
+    *bgn[]={"","b","g","b/g","n","b/n","g/n","b/g/n"};
 	long long mac=d->wifi.mac;
 	int i;
 	POINT_COLOR=BLACK;
@@ -213,17 +212,29 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1)
 			case 1:
 				drawchannelgrid();
 				for(i=0;i<(*cq0)->len;i++)
+				{
+					if(i>=CMAX)
+						break;
 					drawtrapeziod(&(*cq0)->data[i]);
+				}
 				break;
 			case 2:
 				drawtimegrid();
 				for(i=0;i<(*cq0)->len;i++)
+				{
+					if(i>=CMAX)
+						break;
 					drawpolyline(&(*cq0)->data[i],(*cq0)->time,i);
+				}
 				break;
 			case 3:
 				LCD_Fill(0,90,479,799,WHITE);
-				for(i=0;i<(*cq0)->indexlen;i++)
-					drawform((*cq0)->rssiindex[i],i);
+				for(i=0;i<(*cq0)->len;i++)
+				{
+					if(i>=DMAX)
+						break;
+					drawform(&(*cq0)->data[i],i);
+				}
 				break;
 		}
 }

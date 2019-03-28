@@ -1,6 +1,8 @@
 #include "wifi.h"
-#define CQLEN 30
+#define CQLEN QLEN
 #define TLEN 20
+#define CMAX 30
+#define DMAX 22
 
 typedef struct
 {
