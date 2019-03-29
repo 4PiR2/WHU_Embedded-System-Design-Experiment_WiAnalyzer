@@ -5,6 +5,7 @@
 #include "delay.h"
 #include "usart.h"
 
+//堆排序
 static char adddata(wifiqueue *q,wifiinfo *d)
 {
 	if(q->len>=QLEN)
@@ -53,6 +54,8 @@ static void heapsort(wifiqueue *q,short n)
 		downheap(q,n-i-1,0);
 	}
 }
+
+//词法分析器 
 static char check(char *str)
 {
 	switch(*str)
@@ -170,7 +173,6 @@ static char readinfo(wifiqueue *q,char *str)
 	u8 ssidlen;
 	while(1)
 	{
-		//printf("p%d\n%s\n",check(str),str);
 		switch(check(str))
 		{
 			case 1:
@@ -209,7 +211,7 @@ static char readinfo(wifiqueue *q,char *str)
 	}
 }
 
-//向ATK-ESP8266发送命令
+//向ATK-ESP8266发送扫描命令
 //waittime:等待时间(单位:10ms)
 //返回值:0,发送成功(得到了期待的应答结果)
 //       1,发送失败
@@ -237,6 +239,8 @@ u8 atk_8266_search_wifi(wifiqueue *q,short waittime)
 	return 0;
 } 
 
+
+//设置工作方式 
 u8 atk_8266_set(short waittime)
 {
 	USART3_RX_STA=0;
@@ -247,10 +251,7 @@ u8 atk_8266_set(short waittime)
 		if(USART3_RX_STA&0X8000)		//接收到一次数据了
 		{ 
 			USART3_RX_BUF[USART3_RX_STA&0X7FFF]=0;//添加结束符
-			if(0)
-				USART3_RX_STA=0;
-			else
-				break;
+			break;
 		}
 	}
 	if(waittime==0) return 1;

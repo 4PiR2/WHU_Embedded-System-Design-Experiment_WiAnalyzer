@@ -65,11 +65,11 @@ typedef struct
 	char groupcipher;
 	char bgn;
 	char wps;
-} wifiinfo;
+} wifiinfo;//wifi信息 
 typedef struct
 {
 	wifiinfo data[QLEN],*pointer[QLEN];
 	short len;
-} wifiqueue;
+} wifiqueue;//wifi信息队列 
 u8 atk_8266_search_wifi(wifiqueue *q,short waittime);
 u8 atk_8266_set(short waittime);

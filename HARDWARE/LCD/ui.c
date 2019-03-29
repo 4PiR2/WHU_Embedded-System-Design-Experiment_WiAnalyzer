@@ -16,18 +16,32 @@ static char adddata(colorqueue *cq,colorinfo *d,int index)
 	cq->len++;
 	return 0;
 }
-int getrandomcolor()
+
+//随机生成颜色 
+int getrandomcolor(colorqueue *cq)
 {
-	int i,r,g,b;
-	do
+	int i,r,g,b,j,flag=1;
+	while(flag)
 	{
-		i=RNG_Get_RandomNum();
-		r=i>>11&0x1F;
-		g=(i>>5&0x3F)>>1;
-		b=i&0x1F;
-	}while(r+g+b>0x1F*2);
+		do
+		{
+			i=RNG_Get_RandomNum();
+			r=i>>11&0x1F;
+			g=(i>>5&0x3F)>>1;
+			b=i&0x1F;
+		}while(r+g+b>0x1F*2);
+		flag=0;
+		for(j=0;j<cq->len;j++)
+			if(cq->data[j].color==i)
+			{
+				flag=1;
+				break;
+			}
+	}
 	return i;
 }
+
+//画信道图背景网格 
 void drawchannelgrid()
 {
 	u8 i;
@@ -45,6 +59,8 @@ void drawchannelgrid()
 	LCD_ShowString(5,Y1+DY1*10+LFSIZE,strlen((char *)labels1[24])*LFSIZE/2,LFSIZE,LFSIZE,labels1[24]);
 	LCD_ShowString(X1+DX1*8-strlen((char *)labels1[25])*LFSIZE/4,Y1+DY1*10+LFSIZE,strlen((char *)labels1[25])*LFSIZE/2,LFSIZE,LFSIZE,labels1[25]);
 }
+
+//画信道图的梯形 
 void drawtrapeziod(colorinfo *d)
 {
 	char *ssid=d->wifi.ssid;
@@ -62,6 +78,7 @@ void drawtrapeziod(colorinfo *d)
 
 static const u16 X2=38,Y2=100,DX2=(479-X2)/(TLEN-1),DY2=40;
 static u8 *labels2[]={"0","-10","-20","-30","-40","-50","-60","-70","-80","-90","-100","RSSI/dBm","Scan Count"};
+//画时间图背景网格 
 void drawtimegrid()
 {
 	u8 i;
@@ -77,6 +94,7 @@ void drawtimegrid()
 	LCD_ShowString(5,Y2+DY2*10+LFSIZE/2,strlen((char *)labels2[11])*LFSIZE/2,LFSIZE,LFSIZE,labels2[11]);
 	LCD_ShowString(X2+DX2*(TLEN-1)/2-strlen((char *)labels2[12])*LFSIZE/4,Y2+DY2*10+LFSIZE/2,strlen((char *)labels2[12])*LFSIZE/2,LFSIZE,LFSIZE,labels2[12]);
 }
+//画时间图折线 
 void drawpolyline(colorinfo *d,int time,int order)
 {
 	char ssid[38];
@@ -103,6 +121,7 @@ void drawpolyline(colorinfo *d,int time,int order)
 }
 	
 static const u16 X3=5,Y3=90,DY3=LFSIZE*2;
+//显示详细信息 
 void drawform(colorinfo *d,int order)
 {
 	char c,tmp[24],
@@ -143,6 +162,8 @@ void drawform(colorinfo *d,int order)
 		LCD_ShowString(479-X3-3*LFSIZE/2,Y3+DY3*order+LFSIZE,3*LFSIZE/2,LFSIZE,LFSIZE,"WPS");
 }
 
+
+//wifi信号扫描模块调用：更新数据集 
 void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 {
 		colorqueue *cq2;
@@ -153,7 +174,7 @@ void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 			if(q->pointer[i]->mac<(*cq0)->data[j].wifi.mac)
 			{
 				d.wifi=*q->pointer[i];
-				d.color=getrandomcolor();
+				d.color=getrandomcolor(*cq0);
 				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
 				adddata(*cq1,&d,q->pointer[i]-q->data);
@@ -181,7 +202,7 @@ void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 		while(i<q->len)
 		{
 				d.wifi=*q->pointer[i];
-				d.color=getrandomcolor();
+				d.color=getrandomcolor(*cq0);
 				memset(d.strength,0x80,TLEN*sizeof(char));
 				d.strength[time]=d.wifi.rssi;
 				adddata(*cq1,&d,q->pointer[i]-q->data);
@@ -204,6 +225,8 @@ void prepareui(colorqueue **cq0,colorqueue **cq1,wifiqueue *q)
 		*cq0=cq2;
 		(*cq1)->len=0;
 }
+
+//UI绘制模块调用 
 void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1)
 {
 		u8 i;
@@ -229,12 +252,13 @@ void drawui(u8 mode,colorqueue **cq0,colorqueue **cq1)
 				break;
 			case 3:
 				LCD_Fill(0,90,479,799,WHITE);
-				for(i=0;i<(*cq0)->len;i++)
+				for(i=0;i<(*cq0)->indexlen;i++)
 				{
 					if(i>=DMAX)
 						break;
-					drawform(&(*cq0)->data[i],i);
+					drawform((*cq0)->rssiindex[i],i);
 				}
 				break;
 		}
 }
+

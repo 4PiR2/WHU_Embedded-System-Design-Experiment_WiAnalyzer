@@ -33,13 +33,13 @@ CPU_STK START_TASK_STK[START_STK_SIZE];
 void start_task(void *p_arg);
 
 #define WIFI_TASK_PRIO		6
-#define WIFI_STK_SIZE 		256
+#define WIFI_STK_SIZE 		512
 OS_TCB WIFITaskTCB;
 CPU_STK WIFI_TASK_STK[WIFI_STK_SIZE];
 void wifi_task(void *p_arg);
 
 #define UI_TASK_PRIO		5
-#define UI_STK_SIZE 		256
+#define UI_STK_SIZE 		512
 OS_TCB UITaskTCB;	
 CPU_STK UI_TASK_STK[UI_STK_SIZE];
 void ui_task(void *p_arg);
@@ -177,16 +177,16 @@ void wifi_task(void *p_arg)
 	{
 		printf("Scanning\n");
 		LED1=0;
-		atk_8266_search_wifi(&q,2000);
+		atk_8266_search_wifi(&q,2000);                      //扫描wifi 
 		LED1=1;
 		OSSemPend(&Q_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		prepareui(&cq0,&cq1,&q);
-		OSSemPost (&Q_SEM,OS_OPT_POST_1,&err);				//发送信号量
+		prepareui(&cq0,&cq1,&q);                            //更新数据集 
+		OSSemPost(&Q_SEM,OS_OPT_POST_1,&err);				//发送信号量
 		OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
 	}
 }
 
-//屏幕刷新任务
+//UI绘制任务
 void ui_task(void *p_arg)
 {
 	OS_ERR err;
@@ -205,7 +205,7 @@ void ui_task(void *p_arg)
 		LCD_Fill(12+145+10+145+10,40,12+145+10+145+10+145,80,mode0==2?YELLOW:0X6FF);
 		LCD_ShowString(12+145+10+145+10+32,40+12,10*16,16,16,"TIME GRAPH");
 		OSSemPend(&Q_SEM,0,OS_OPT_PEND_BLOCKING,0,&err); 	//请求信号量
-		drawui(mode0,&cq0,&cq1);
+		drawui(mode0,&cq0,&cq1);                            //绘图 
 		OSSemPost (&Q_SEM,OS_OPT_POST_1,&err);				//发送信号量
 		if(mode0==mode)
 			OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时
@@ -222,7 +222,7 @@ void mode_task(void *p_arg)
 	while(1)
 	{
 		mode0=mode;
-		switch(KEY_Scan(0))
+		switch(KEY_Scan(0))//按键 
 		{
 			case KEY0_PRES:
 				mode=2;
@@ -234,7 +234,7 @@ void mode_task(void *p_arg)
 				mode=3;
 				break;
 			default:
-			switch(Remote_Scan())
+			switch(Remote_Scan())//红外遥控 
 			{
 				case 104:
 					mode=3;
@@ -258,10 +258,10 @@ void mode_task(void *p_arg)
 						mode=1;
 					break;
 				default:
-				tp_dev.scan(0);
+				tp_dev.scan(0);//屏幕触摸 
 				switch(tp_dev.sta&3)
 				{
-					case 3:
+					case 3://双指滑动 
 						x1=tp_dev.x[0];
 						x2=tp_dev.x[1];
 						if(flag)
@@ -292,7 +292,7 @@ void mode_task(void *p_arg)
 							flag=1;
 						}
 						break;
-					case 1:
+					case 1://单指点击 
 						x1=tp_dev.x[0];
 						y1=tp_dev.y[0];
 						if(y1>=40&&y1<=80)
@@ -311,8 +311,8 @@ void mode_task(void *p_arg)
 		}
 		if(mode0!=mode)
 		{
-			BEEP=1;
-			OSTimeDlyResume((OS_TCB *)&UITaskTCB,&err);
+			BEEP=1;//蜂鸣器 
+			OSTimeDlyResume((OS_TCB *)&UITaskTCB,&err);//唤醒UI绘制任务 
 		}
 		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err);
 		BEEP=0;

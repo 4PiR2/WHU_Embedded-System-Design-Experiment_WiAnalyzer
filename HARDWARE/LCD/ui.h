@@ -13,7 +13,7 @@ typedef struct
 typedef struct
 {
 	colorinfo data[CQLEN];
-	colorinfo *rssiindex[QLEN];
+	colorinfo *rssiindex[QLEN];//RSSI½µÐòË÷Òý 
 	short len,indexlen;
 	char time;
 } colorqueue;
